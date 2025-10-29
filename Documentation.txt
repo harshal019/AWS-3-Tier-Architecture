@@ -1,7 +1,4 @@
 DevOps - 3 Tier Project
----------------------------
-GitHub URL: https://github.com/KastroVKiran/3TierArchitectureApp.git
-
 *******************************************
 Steps for Setting Up the Project Infrastructure
 *******************************************
