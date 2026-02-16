@@ -181,5 +181,4 @@ Route53 → External ALB → Web Tier → Internal ALB → App Tier → RDS
 
 ---
 
-## 📂 Repository Structure
 
