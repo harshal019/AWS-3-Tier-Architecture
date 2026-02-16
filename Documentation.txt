@@ -1,201 +1,247 @@
-DevOps - 3 Tier Project
-*******************************************
-Steps for Setting Up the Project Infrastructure
-*******************************************
-1. VPC Creation
-Design and create a Virtual Private Cloud (VPC) to serve as the foundation for the project infrastructure.
+AWS 3-Tier Architecture with High Availability & Fault Tolerance
+================================================================
 
-2. S3 Bucket and IAM Role Setup
-Create an S3 bucket and upload the application code.
-Set up an IAM role with the necessary permissions and attach it to the EC2 instance.
+1. PROJECT OVERVIEW
+-------------------
+This project implements a production-style AWS 3-Tier Architecture designed for scalability, security, and high availability.
 
-3. Database Configuration
-Launch and configure an RDS instance to serve as the backend database.
+The application is divided into three layers:
 
-4. Application Tier Setup
-Deploy application-tier resources, including the configuration of an internal load balancer for traffic distribution within the tier.
+1. Web Tier (Presentation Layer)
+2. Application Tier (Business Logic Layer)
+3. Database Tier (Data Layer)
 
-5. Web Tier Setup
-Provision web-tier resources and set up an external load balancer to manage incoming traffic from users.
+Traffic Flow:
+User → Route53 → External ALB → Web Tier → Internal ALB → App Tier → Amazon RDS
 
-6. SSL Certification and Domain Mapping
-Generate an SSL certificate and apply it to the external load balancer to ensure secure communication.
-Map the domain name to the external load balancer for public accessibility.
+The architecture follows DevOps and cloud best practices including network isolation, load balancing, auto scaling, and secure tier-to-tier communication.
 
+------------------------------------------------------------
 
+2. PROJECT OBJECTIVES
+----------------------
+- Design secure and scalable cloud infrastructure
+- Separate web, application, and database tiers
+- Implement external and internal load balancing
+- Deploy backend services in private subnets
+- Enable Auto Scaling for high availability
+- Secure traffic using SSL/HTTPS
+- Map custom domain using Route 53
 
-~~~~~~~~~~~
-Step 3
-~~~~~~~~~~~
+------------------------------------------------------------
 
-Go into the following path of cloned code "application-code/app-tier/DbConfig.js" and open 'Dbconfig.js' file and change the things accordingly as shown below;
-module.exports = Object.freeze({
-    DB_HOST: 'YOUR-DATABASE-ENDPOINT.ap-south-1.rds.amazonaws.com',
-    DB_USER: 'admin',
-    DB_PWD: 'kastro2025',
-    DB_DATABASE: 'webappdb'
-});
+3. AWS SERVICES USED
+--------------------
+- Amazon VPC
+- Public & Private Subnets
+- Internet Gateway
+- NAT Gateway
+- Amazon EC2
+- Amazon S3
+- IAM Roles
+- Amazon RDS (MySQL Multi-AZ)
+- Application Load Balancer (External & Internal)
+- Auto Scaling Group
+- AWS Certificate Manager (ACM)
+- Amazon Route 53
 
-The reason for having the above info is our App Servers running in Private Subnets should be able to connect to the DB, for that connectivity it is going to use these credentials provided in DbConfig.js file. 
+------------------------------------------------------------
 
-Update the above code and upload the Dbconfig.js file in the S3 bucket of 'app-tier' folder.
+4. ARCHITECTURE OVERVIEW
+-------------------------
+- User requests enter through Route53 DNS.
+- External ALB routes traffic to Web Tier instances.
+- Web Tier serves frontend and forwards API requests.
+- Internal ALB distributes API traffic to App Tier instances.
+- App Tier processes business logic and communicates with RDS.
+- Database tier remains isolated inside private subnets.
 
-~~~~~~~~~~~
-Step 4
-~~~~~~~~~~~
-Creation of App Tier Resources
+Key Features:
+- Multi-AZ deployment for fault tolerance
+- Internal Load Balancer to secure backend APIs
+- Private database subnet isolation
+- NAT Gateway for secure outbound internet access
 
-4.1. 
-In this instance we will do the App Server Setup and DB Server Configuration. Execute the below commands;
-Install MySQL
-sudo yum install mysql -y
+------------------------------------------------------------
 
-Configure MySQL Database
-Connect to the database and perform basic configuration: Replace below info with your DB information
-mysql -h <DB EndPoint> -u admin -p ----> Enter the Password i.e kastro2025 (this is DB password). If you couldn't connect, there is a problem with the SG of the DB.
+5. END-TO-END REQUEST FLOW
+---------------------------
+1. User accesses application via custom domain.
+2. Route53 resolves DNS and forwards traffic to External ALB.
+3. External ALB routes requests to Web Tier EC2 instances.
+4. Web Tier serves frontend content.
+5. API requests are forwarded to Internal ALB.
+6. Internal ALB routes requests to App Tier instances.
+7. App Tier processes logic and queries Amazon RDS.
+8. Response returns through the same secure path.
 
-Ex: mysql -h database-1.c380a08uukyc.ap-south-1.rds.amazonaws.com -u admin -p
+------------------------------------------------------------
 
-Lets create a database. The database name i'm creating is "webappdb" (This is same name that you should give in DvConfig.js file);
-CREATE DATABASE webappdb;
+6. DEPLOYMENT STEPS
+-------------------
 
-SHOW DATABASES;
+STEP 1 — VPC & Networking Setup
+--------------------------------
+- Create custom VPC (CIDR: 10.0.0.0/16)
+- Create:
+  - 2 Public Subnets (Web Tier + External ALB)
+  - 2 Private App Subnets
+  - 2 Private DB Subnets
+- Attach Internet Gateway
+- Configure NAT Gateway
+- Configure route tables
 
-USE webappdb; ----> You will see 'Database changed'
+STEP 2 — S3 & IAM Configuration
+--------------------------------
+- Create S3 bucket for application artifacts
+- Upload web-tier and app-tier code
+- Create IAM role with AmazonS3ReadOnlyAccess
+- Attach IAM role to EC2 instances
 
-Execute the below code as a single code. Here we are creating a table with the name 'transactions'
-CREATE TABLE IF NOT EXISTS transactions(
-  id INT NOT NULL AUTO_INCREMENT, 
-  amount DECIMAL(10,2), 
-  description VARCHAR(100), 
-  PRIMARY KEY(id)
-);
+STEP 3 — RDS Setup
+------------------
+- Create DB subnet group (private subnets)
+- Deploy MySQL RDS instance (Multi-AZ enabled)
+- Disable public access
+- Allow MySQL access only from App Tier Security Group
 
-To verify whether table got created or not;
-SHOW TABLES;
+STEP 4 — Application Tier Setup
+-------------------------------
+- Launch EC2 instances in private subnets
+- Install runtime dependencies
+- Pull code from S3
+- Configure database connection
+- Start application using PM2
 
-Lets insert some info into the table
-INSERT INTO transactions (amount, description) VALUES ('400', 'groceries');
+STEP 4.2 — Internal Load Balancer
+---------------------------------
+- Create target group (Port 4000)
+- Configure health check (/health)
+- Create Internal ALB
+- Attach App Tier instances
 
-To verify whether the entry is really created or not
-SELECT * FROM transactions;
-You will see the info you have written
+STEP 5 — Web Tier Setup
+-----------------------
+- Launch Web Tier EC2 instances
+- Install Node.js runtime and NGINX
+- Download frontend code from S3
+- Configure NGINX reverse proxy to Internal ALB
 
-To come out of the DB;
-exit (You will see 'ec2-user' at the end of command line and at the beginning of command line you will see 'root')
+STEP 5.2 — External Load Balancer
+---------------------------------
+- Create target group for Web Tier
+- Create Internet-facing ALB
+- Attach Web Tier instances
 
-Update Application Configuration to with DB information
-Update the **application-code/app-tier/DbConfig.js** file with your database credentials.
+STEP 6 — Application Validation
+-------------------------------
+- Verify frontend accessibility via External ALB
+- Validate API communication and database connectivity
 
-Install and Configure Node.js and PM2
-curl -o- https://raw.githubusercontent.com/avizway1/aws_3tier_architecture/main/install.sh | bash
-source ~/.bashrc
+STEP 7 — Auto Scaling
+---------------------
+- Create AMI from App Tier instance
+- Create Launch Template
+- Configure Auto Scaling Group
+  - Minimum: 2
+  - Desired: 2
+  - Maximum: 4
+- Attach ASG to Internal ALB
 
-nvm install 16
-nvm use 16 (You will see 'Now using node v16.20.2)
+STEP 8 — SSL + Custom Domain Setup
+-----------------------------------
+- Request SSL certificate via ACM
+- Validate domain using Route53 DNS records
+- Add HTTPS listener (443) to External ALB
+- Attach SSL certificate
 
-NVM means Node Version Manager
- 
-To run node as a service, we will install pm2
-npm install -g pm2 (You will see 'found 0 vulnerabilities)
+STEP 9 — Access Application
+---------------------------
+- Access application securely via:
+  https://your-domain-name.com
 
-Download application code from S3 and start the application
-cd ~/ 
-sudo aws s3 cp s3://<S3BucketName>/application-code/app-tier/ app-tier --recursive
+------------------------------------------------------------
 
-Ex: sudo aws s3 cp s3://demo-3tier-project/application-code/app-tier/ app-tier --recursive
+7. ARCHITECTURE DECISIONS
+-------------------------
+- Internal ALB is used so backend APIs are not publicly accessible.
+- Application and Database tiers are deployed in private subnets for security.
+- Multi-AZ RDS ensures database availability during failures.
+- Auto Scaling improves resilience during traffic spikes.
+- NAT Gateway allows controlled outbound internet access from private subnets.
 
-ls ---> You will see 'app-tier' folder
+------------------------------------------------------------
 
-cd app-tier/ 
-npm install
-ls ----> You will see 'index.js' file. We have to start that.
+8. SECURITY IMPLEMENTATION
+--------------------------
+- Tier-based Security Groups restrict communication.
+- Database accessible only from App Tier.
+- No public access to App or DB tiers.
+- HTTPS enabled using ACM certificates.
+- IAM roles used instead of static credentials.
+- Sensitive configuration should be stored using AWS Secrets Manager.
 
-pm2 start index.js (You will see the status as 'online')
+------------------------------------------------------------
 
-To verify;
-pm2 list (or) pm2 status
-pm2 logs (You will not see anything in red colour, everything in white colour you should see)
+9. HIGH AVAILABILITY & FAULT TOLERANCE
+--------------------------------------
+- Multi-AZ subnet design
+- Load balancing across multiple instances
+- Auto Scaling for automatic recovery
+- RDS Multi-AZ failover support
 
-At the end you will see something like; http://localhost:4000
+------------------------------------------------------------
 
-pm2 startup
-pm2 save ---> To save the configuration	
+10. CHALLENGES FACED & SOLUTIONS
+--------------------------------
+Challenges:
+- Configuring NGINX reverse proxy with internal ALB.
+- Managing internet access for private instances.
+- SSL certificate DNS validation.
 
-Verify that the application is running by executing
-curl http://localhost:4000/health
-It should return: This is the health check.
+Solutions:
+- Used Internal ALB DNS in nginx.conf.
+- Configured NAT Gateway with private route tables.
+- Used ACM DNS validation through Route53.
 
-With this we have completed the application configuration.
+------------------------------------------------------------
 
-4.2. Creation of Internal Load Balancer for App Tier
+11. DEVOPS SKILLS DEMONSTRATED
+------------------------------
+- AWS cloud architecture design
+- Network isolation and security
+- Load balancing strategy
+- Auto Scaling configuration
+- Linux server administration
+- NGINX reverse proxy setup
+- Production-style deployment mindset
 
-Goto the downloaded code folder in local system ----> Open nginx.conf file and in the end of the file you will see something like below;
-        #proxy for internal lb
-        location /api/{
-                proxy_pass http://[REPLACE-WITH-INTERNAL-LB-DNS]:80/;
-        }
+------------------------------------------------------------
 
-Replace the LB DNS in the above
+12. FUTURE IMPROVEMENTS
+-----------------------
+- Infrastructure as Code (Terraform)
+- CI/CD pipeline using Jenkins or GitHub Actions
+- Monitoring with CloudWatch and Grafana
+- AWS WAF integration for enhanced security
+- Logging and alerting improvements
 
-Upload the updated nginx.conf file to the S3 bucket
+------------------------------------------------------------
 
-This one we are going to copy to the webserver in sometime.
- 
-~~~~~~~~~~~
-Step 5
-~~~~~~~~~~~
-Creation of Web tier resources including External Load Balancer
+13. INTERVIEW TALKING POINTS
+-----------------------------
+- Why use Internal ALB instead of exposing App Tier?
+- Difference between Web and Application tiers.
+- Why NAT Gateway is required.
+- How Auto Scaling improves reliability.
+- Why database remains in private subnets.
+- How HTTPS is enabled using ACM and Route53.
 
-sudo -su ec2-user (To work as an ec2-user)    
+------------------------------------------------------------
 
-cd /home/ec2-user
+14. REPOSITORY
+--------------
+https://github.com/harshal019/AWS-3-Tier-Architecture
 
-curl -o- https://raw.githubusercontent.com/avizway1/aws_3tier_architecture/main/install.sh | bash
-source ~/.bashrc
-nvm install 16
-nvm use 16
+============================================================
 
-aws s3 cp s3://<S3 Bucker Name>/application-code/web-tier/ web-tier --recursive
-Ex: aws s3 cp s3://demo-3tier-project/application-code/web-tier/ web-tier --recursive
-
-ls ----> You will see 'web-tier'
-
-cd web-tier
-npm install
-npm run build
-
-sudo amazon-linux-extras install nginx1 -y
-
-Update Nginx configuration:
-cd /etc/nginx (Your are in nginx path)
-ls ----> You will see 'nginx.conf' file
-
-sudo rm nginx.conf
-sudo aws s3 cp s3://<S3 Bucker Name>/application-code/nginx.conf .
-Ex: sudo aws s3 cp s3://demo-3tier-project/application-code/nginx.conf .
-sudo service nginx restart
-
-chmod -R 755 /home/ec2-user
-
-sudo chkconfig nginx on
-
-To check the output of the App, we can check using the Web-Tier-Instance public IP. But before checking lets open port no 80 with http, Anywhere IPv4, 0.0.0.0/0 ---> Save rules ----> Now paste the pubic ip of Web-Tier-Instance in new tab of browser ----> You will see the app ----> Enter the data in the app
-
-
-This is about 3 tier architecture with HA and Fault Tolerance.
-
-
-Delete everything once its done
-First delete ASG
-Next delete both LBs
-Next delete both TGs
-Next delete both AMIs
-Next delete both Snapshots of AMIs
-Next delete DB
-Next delete S3 Bucket
-Next delete Certificate
-Next delete Route 53 record
-Next delete NAT GW
-Next delete Elastic IP. This came because of NATGW
-Next delete VPC
