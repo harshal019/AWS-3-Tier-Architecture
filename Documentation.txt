@@ -11,24 +11,27 @@ The application is divided into three layers:
 2. Application Tier (Business Logic Layer)
 3. Database Tier (Data Layer)
 
+------------------------------------------------------------
+
+2. ARCHITECTURE SUMMARY
+------------------------
+The project follows a production-style 3-tier architecture:
+
+1. Web Tier (Presentation Layer)
+2. Application Tier (Business Logic Layer)
+3. Database Tier (Data Layer)
+
 Traffic Flow:
 User → Route53 → External ALB → Web Tier → Internal ALB → App Tier → Amazon RDS
 
-The architecture follows DevOps and cloud best practices including network isolation, load balancing, auto scaling, and secure tier-to-tier communication.
+Core design principles:
+- Network isolation between tiers
+- High availability across multiple Availability Zones
+- Secure backend communication
+- Scalable infrastructure using Auto Scalinge architecture follows DevOps and cloud best practices including network isolation, load balancing, auto scaling, and secure tier-to-tier communication.
 
 ------------------------------------------------------------
 
-2. PROJECT OBJECTIVES
-----------------------
-- Design secure and scalable cloud infrastructure
-- Separate web, application, and database tiers
-- Implement external and internal load balancing
-- Deploy backend services in private subnets
-- Enable Auto Scaling for high availability
-- Secure traffic using SSL/HTTPS
-- Map custom domain using Route 53
-
-------------------------------------------------------------
 
 3. AWS SERVICES USED
 --------------------
@@ -82,7 +85,7 @@ Key Features:
 
 STEP 1 — VPC & Networking Setup
 --------------------------------
-- Create custom VPC (CIDR: 10.0.0.0/16)
+- Create custom VPC 
 - Create:
   - 2 Public Subnets (Web Tier + External ALB)
   - 2 Private App Subnets
@@ -162,84 +165,73 @@ STEP 9 — Access Application
 
 ------------------------------------------------------------
 
-7. ARCHITECTURE DECISIONS
--------------------------
-- Internal ALB is used so backend APIs are not publicly accessible.
-- Application and Database tiers are deployed in private subnets for security.
-- Multi-AZ RDS ensures database availability during failures.
-- Auto Scaling improves resilience during traffic spikes.
-- NAT Gateway allows controlled outbound internet access from private subnets.
-
-------------------------------------------------------------
-
-8. SECURITY IMPLEMENTATION
+7. SECURITY IMPLEMENTATION
 --------------------------
-- Tier-based Security Groups restrict communication.
-- Database accessible only from App Tier.
-- No public access to App or DB tiers.
+- Security groups enforce tier-to-tier communication.
+- App and DB tiers are private (no public IP).
+- Database access restricted to App Tier SG only.
 - HTTPS enabled using ACM certificates.
-- IAM roles used instead of static credentials.
-- Sensitive configuration should be stored using AWS Secrets Manager.
+- IAM roles used for secure service access.
+- Secrets should be stored using AWS Secrets Manager.
 
 ------------------------------------------------------------
 
-9. HIGH AVAILABILITY & FAULT TOLERANCE
+8. HIGH AVAILABILITY & FAULT TOLERANCE
 --------------------------------------
-- Multi-AZ subnet design
-- Load balancing across multiple instances
-- Auto Scaling for automatic recovery
-- RDS Multi-AZ failover support
+- Multi-AZ deployment of subnets and RDS.
+- Load balancers distribute traffic across healthy instances.
+- Auto Scaling replaces unhealthy instances automatically.
+- Stateless application design supports scaling.
 
 ------------------------------------------------------------
 
-10. CHALLENGES FACED & SOLUTIONS
+9. CHALLENGES FACED & SOLUTIONS
 --------------------------------
 Challenges:
-- Configuring NGINX reverse proxy with internal ALB.
-- Managing internet access for private instances.
-- SSL certificate DNS validation.
+- Configuring NGINX reverse proxy for internal API routing.
+- Enabling internet access for private instances securely.
+- SSL certificate validation via DNS.
 
 Solutions:
 - Used Internal ALB DNS in nginx.conf.
-- Configured NAT Gateway with private route tables.
-- Used ACM DNS validation through Route53.
+- Configured NAT Gateway for outbound traffic.
+- Used ACM DNS validation with Route53.
 
 ------------------------------------------------------------
 
-11. DEVOPS SKILLS DEMONSTRATED
-------------------------------
+10. DEVOPS SKILLS DEMONSTRATED
+-------------------------------
 - AWS cloud architecture design
-- Network isolation and security
+- Secure VPC networking
 - Load balancing strategy
-- Auto Scaling configuration
-- Linux server administration
-- NGINX reverse proxy setup
-- Production-style deployment mindset
+- Auto Scaling implementation
+- Linux server management
+- NGINX reverse proxy configuration
+- High availability design principles
 
 ------------------------------------------------------------
 
-12. FUTURE IMPROVEMENTS
+11. FUTURE IMPROVEMENTS
 -----------------------
-- Infrastructure as Code (Terraform)
+- Infrastructure as Code using Terraform
 - CI/CD pipeline using Jenkins or GitHub Actions
-- Monitoring with CloudWatch and Grafana
-- AWS WAF integration for enhanced security
-- Logging and alerting improvements
+- Monitoring using CloudWatch and Grafana
+- Centralized logging and alerting
+- AWS WAF integration for additional security
 
 ------------------------------------------------------------
 
-13. INTERVIEW TALKING POINTS
------------------------------
-- Why use Internal ALB instead of exposing App Tier?
-- Difference between Web and Application tiers.
-- Why NAT Gateway is required.
-- How Auto Scaling improves reliability.
-- Why database remains in private subnets.
-- How HTTPS is enabled using ACM and Route53.
+12. LESSONS LEARNED
+-------------------
+- Internal load balancing improves API security.
+- Private subnets reduce attack surface significantly.
+- Auto Scaling requires stateless application architecture.
+- Proper network design simplifies scaling and maintenance.
 
 ------------------------------------------------------------
 
-14. REPOSITORY
+
+13. REPOSITORY
 --------------
 https://github.com/harshal019/AWS-3-Tier-Architecture
 
