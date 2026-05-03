@@ -1,0 +1,4 @@
+- hosts: tag_Role_app
+  become: true
+  roles:
+    - app

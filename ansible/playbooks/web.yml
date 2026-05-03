@@ -1,0 +1,4 @@
+- hosts: tag_Role_web
+  become: true
+  roles:
+    - web

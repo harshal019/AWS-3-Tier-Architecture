@@ -1,0 +1,35 @@
+- name: Install nginx
+  yum:
+    name: nginx
+    state: present
+
+- name: Clone project repo
+  git:
+    repo: "https://github.com/harshal019/AWS-3-Tier-Architecture.git"
+    dest: /home/ec2-user/project
+    version: main
+    force: yes
+
+- name: Copy frontend files to nginx
+  copy:
+    src: /home/ec2-user/project/application/web-tier/
+    dest: /usr/share/nginx/html/
+    remote_src: yes
+
+- name: Configure nginx reverse proxy
+  copy:
+    dest: /etc/nginx/conf.d/app.conf
+    content: |
+      server {
+        listen 80;
+
+        location /api {
+          proxy_pass http://{{ internal_alb_dns }};
+        }
+      }
+
+- name: Start nginx
+  service:
+    name: nginx
+    state: started
+    enabled: true

@@ -1,0 +1,31 @@
+- name: Install Node.js
+  yum:
+    name: nodejs
+    state: present
+
+- name: Install git
+  yum:
+    name: git
+    state: present
+
+- name: Clone project repo
+  git:
+    repo: "https://github.com/harshal019/AWS-3-Tier-Architecture.git"
+    dest: /home/ec2-user/project
+    version: main
+    force: yes
+
+- name: Install dependencies
+  shell: npm install
+  args:
+    chdir: /home/ec2-user/project/application/app-tier
+
+- name: Install PM2
+  npm:
+    name: pm2
+    global: yes
+
+- name: Start backend app
+  shell: pm2 start app.js
+  args:
+    chdir: /home/ec2-user/project/application/app-tier

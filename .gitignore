@@ -1,0 +1,22 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Variables
+*.tfvars
+*.tfvars.json
+
+
+# Secrets
+.env
+*.pem
+*.key
+*.crt
+
+# Ansible
+*.vault
+
+# Logs
+*.log
