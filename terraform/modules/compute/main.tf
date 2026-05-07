@@ -1,11 +1,20 @@
 // ALB → Target Group → EC2 (created by Auto Scaling)
 
+
+
 resource "aws_launch_template" "web_lt" {
   name_prefix   = "${var.project}-${var.env}-web"
   image_id      = var.ami_id   # replace with valid AMI
   instance_type = var.instance_type
 
-  vpc_security_group_ids = [var.web_sg_id]
+  iam_instance_profile {
+    name = var.instance_profile_name
+  }
+  key_name = var.key_name
+  network_interfaces {
+    associate_public_ip_address = true
+    security_groups             = [var.web_sg_id]
+  }
 
   user_data = base64encode(<<-EOF
               #!/bin/bash
@@ -49,6 +58,12 @@ resource "aws_launch_template" "app_lt" {
   name_prefix   = "${var.project}-${var.env}-app"
   image_id      = var.ami_id
   instance_type = var.instance_type
+
+  iam_instance_profile {
+     name = var.instance_profile_name
+  }
+
+  key_name = var.key_name
 
   vpc_security_group_ids = [var.app_sg_id]
 

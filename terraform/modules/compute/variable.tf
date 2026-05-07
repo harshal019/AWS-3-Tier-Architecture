@@ -19,3 +19,10 @@ variable "app_tg_arn" {}
 variable "ami_id" {}
 
 variable "instance_type" {}
+
+
+variable "key_name" {
+  type = string
+}
+
+variable "instance_profile_name" {}

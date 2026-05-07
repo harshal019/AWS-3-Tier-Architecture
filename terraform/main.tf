@@ -34,6 +34,10 @@ module "alb" {
   internal_alb_sg_id = module.security.internal_alb_sg_id
 }
 
+resource "aws_key_pair" "three_tier_key" {
+  key_name   = "3tier-key"
+  public_key = file("~/.ssh/3tier-key.pub")
+}
 
 module "compute" {
  source = "./modules/compute"
@@ -41,8 +45,13 @@ module "compute" {
   project = "3tier"
   env = "dev"
 
-  ami_id = "ami-018d49b53eee64386"
+  ami_id = "ami-0fe18bc3cfa53a248"
   instance_type = "t3.medium"
+
+  key_name = aws_key_pair.three_tier_key.key_name 
+
+  instance_profile_name = module.iam.instance_profile_name
+
 
   web_sg_id = module.security.web_sg_id
   app_sg_id = module.security.app_sg_id
@@ -74,3 +83,14 @@ module "rds" {
 }
 
 
+module "s3" {
+  source  = "./modules/s3"
+  project = "3tier"
+  env     = "dev"
+}
+
+module "iam" {
+  source  = "./modules/iam"
+  project = "3tier"
+  env     = "dev"
+}
